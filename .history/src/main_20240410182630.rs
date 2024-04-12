@@ -1,0 +1,162 @@
+use std::{
+    io::{self, Read, Write},
+    str::Chars,
+};
+
+#[derive(Debug, PartialEq)]
+enum TokenKind {
+    MoveLeft,  // <
+    MoveRight, // >
+    Increment, // +
+    Decrement, // -
+    Print,     // .
+    Input,     // ,
+    Jmp,       // [
+    Pmj,       // ]
+}
+
+#[derive(Debug)]
+struct Token {
+    pub kind: TokenKind,
+    pos: usize,
+}
+
+impl Token {
+    pub fn from(kind: TokenKind, pos: usize) -> Self {
+        Self { kind, pos }
+    }
+}
+
+struct Lexer<'a> {
+    buffer: Chars<'a>,
+}
+
+impl Lexer<'_> {
+    pub fn lex(&mut self) -> Vec<Token> {
+        let mut tokens = Vec::new();
+        let mut pos: usize = 1;
+        loop {
+            match self.buffer.next() {
+                None => break,
+                Some(c) => match Self::identify(c) {
+                    Some(token) => tokens.push(Token::from(token, pos)),
+                    None => (),
+                },
+            }
+            pos += 1;
+        }
+        tokens
+    }
+
+    fn identify(c: char) -> Option<TokenKind> {
+        use TokenKind::*;
+        match c {
+            '<' => Some(MoveLeft),
+            '>' => Some(MoveRight),
+            '+' => Some(Increment),
+            '-' => Some(Decrement),
+            '.' => Some(Print),
+            ',' => Some(Input),
+            '[' => Some(Jmp),
+            ']' => Some(Pmj),
+            _ => None,
+        }
+    }
+}
+
+impl<'a> From<&'a str> for Lexer<'a> {
+    fn from(buffer: &'a str) -> Self {
+        let buffer = buffer.chars();
+        Self { buffer }
+    }
+}
+
+// fn load_jmp_table(toks: &[Token]) -> HashMap<usize, usize> {
+//     let mut table = HashMap::new();
+//     let mut indices = 0usize;
+//     let mut counted = 0usize;
+//     let mut last = 0usize;
+//     for tok in toks.iter() {
+//         if tok.kind == TokenKind::Jmp {
+//             last = counted;
+//             counted += 1;
+//             table.insert(indices, 0usize);
+//         }
+//         indices += 1;
+//     }
+//     table
+// }
+
+// fn eval(toks: &[Token]) {
+//     let mut cells: Vec<u8> = vec![0; 30];
+//     let mut cell_cursor: usize = 0;
+//     let mut program_cursor: usize = 0;
+//     let mut last_jmp: Vec<usize> = Vec::new();
+//     let mut last_pmj: Vec<usize> = Vec::new();
+
+//     loop {
+//         match toks.get(program_cursor) {
+//             Some(tok) => {
+//                 use TokenKind as TK;
+//                 match tok.kind {
+//                     TK::Increment => cells[cell_cursor] = cells[cell_cursor].wrapping_add(1),
+//                     TK::Decrement => cells[cell_cursor] = cells[cell_cursor].wrapping_sub(1),
+//                     TK::MoveRight => cell_cursor += 1,
+//                     TK::MoveLeft => cell_cursor -= 1,
+//                     TK::Print => print!("{}", cells[cell_cursor] as char),
+//                     TK::Input => {
+//                         let mut input = [0];
+//                         let _ = io::stdout().flush();
+//                         io::stdin()
+//                             .read_exact(&mut input)
+//                             .expect("Couldn't fetch user input: failed on , at pos blah blah");
+//                         cells[cell_cursor] = input[0];
+//                     }
+//                     TK::Jmp => {
+//                         // if !last_jmp.contains(&program_cursor) {
+//                          last_jmp.push(program_cursor);
+//                         // }
+//                         if cells[cell_cursor] == 0 {
+//                             match last_pmj.pop() {
+//                                 Some(cell) => program_cursor = cell,
+//                                 None => panic!("No matching ["),
+//                             }
+//                         }
+//                     }
+//                     TK::Pmj => {
+//                         // if !last_pmj.contains(&program_cursor) {
+//                         last_pmj.push(program_cursor);
+//                         // }
+//                         if cells[cell_cursor] != 0 {
+//                             match last_jmp.pop() {
+//                                 Some(cell) => program_cursor = cell,
+//                                 None => panic!("No matching ]"),
+//                             }
+//                         }
+//                     }
+//                 }
+//             }
+//             None => break,
+//         }
+//         program_cursor += 1;
+//     }
+// }
+
+struct Interpreter<'a> {
+    tokens: &'a [Token],
+}
+
+impl From<str> for Interpreter<'_> {
+    fn from(source: str) -> Self {
+        let tokens = Lexer::from(source);
+        Self {
+            tokens
+        }
+    }
+}
+
+fn main() {
+    let mut lexer = Lexer::from(include_str!("../test2"));
+    // dbg!(lexer.lex());
+    // eval(&lexer.lex());
+}
